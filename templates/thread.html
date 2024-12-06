@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Reply Mode Label -->
+<div class="replymode">
+    <strong>Reply Mode</strong> | <a href="/">Back to Main Board</a>
+</div>
+<br>
+
+<!-- Reply Form -->
+<div class="postarea-container">
+    <form class="postform" action="/reply" method="post">
+        <input type="hidden" name="parent_id" value="{{ thread.id }}">
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="4" maxlength="8000" placeholder="Reply to thread" required></textarea>
+        <input type="submit" value="Reply">
+    </form>
+</div>
+<br>
+
+<!-- Main Thread -->
+<div class="thread">
+    <div class="row1">
+        <span class="title">{{ thread.title }}</span><br>
+        <span class="message">{{ thread.message }}</span>
+    </div>
+</div>
+<hr>
+
+<!-- Replies -->
+<div class="postlists">
+    {% for reply in replies %}
+        <div class="reply" id="post{{ reply.id }}">
+            <span class="message">{{ reply.message }}</span>
+        </div>
+        <hr>
+    {% else %}
+        <p>No replies yet. Be the first to reply!</p>
+    {% endfor %}
+</div>
+
+<div class="footer">
+    - Powered by Rust and Actix Web -
+</div>
+{% endblock %}

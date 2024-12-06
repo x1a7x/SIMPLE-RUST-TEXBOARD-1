@@ -1,0 +1,53 @@
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+
+
+
+sudo -i -u postgres  Switch to the postgres user:
+
+psql       Open the PostgreSQL shell
+
+
+
+CREATE DATABASE chess;
+
+CREATE USER chessadmin WITH PASSWORD 'securepassword';
+GRANT ALL PRIVILEGES ON DATABASE chess TO chessadmin;
+
+\q    Exit the PostgreSQL shell:
+
+exit  Return to your regular user:
+
+  //////
+  
+  
+  sudo -u postgres psql      Connect to the PostgreSQL database as the postgres user:
+  
+  \c chess                   Switch to the chess database:
+  
+  
+  
+  GRANT ALL PRIVILEGES ON SCHEMA public TO chessadmin;             Grant all privileges on the public schema to chessadmin:
+  
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO chessadmin;                 gives creave privs
+  ALTER ROLE chessadmin SET search_path TO public;
+
+         \q
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ////////
+
+ In your app, connect to the database using a connection string (e.g., in your .env file or code):
+ DATABASE_URL=postgres://chessadmin:securepassword@localhost:5432/chess   
