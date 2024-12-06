@@ -13,3 +13,5 @@ wrong, but i think https://usagi.reisen/ is the fastest well known ib that out t
 aims to be far superior in speed and security. Feel free to make an issue and point out the very fastest well used imageboards.
 (an untested app made for a single user does not count, it is not battle tested with multiple posters). This will end up being in the
 top 3 most secure and fast imageboards of all. 
+
+Note--- the looks do NOT matter. The css can make this look like any other board. What this is meant to showcase is the speed and reliability it brings.
