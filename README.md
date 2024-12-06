@@ -6,9 +6,7 @@ Here is an example of what paying chatgpt 20 dollars a month can make you withou
 
 this is https://github.com/x1a7x/SIMPLE-RUST-TEXBOARD (which uses sled db) converted to use postgres. 
 
-Seems to work very well, not tested fully yet tho. Lightning fast even on tor because so far its only rust postgres and text. The sled db version
-is lightning fast, but under heavy load postgres would be best. Granted, not many websites need 2000 posts at the same time, and a lot of the modern
-solutions like sled db can handle 500 or more posts at once quite well and as fast as it gets. This app aims to be versatile- low amount of users to a high amount of users and still fast overall without being stopped. (given the same hardware as other boards). This Rust app wants to be ultra secure, ultra reliable, and unstoppable. Rust is currently the best choice for that. 
+Seems to work very well, not tested fully yet tho. Rust IS the right lang, but apps still need to be tested and modified. Lightning fast even on tor because so far its only rust postgres and text. The sled db version is lightning fast, but under heavy load postgres would be best. Granted, not many websites need 2000 posts at the same time, and a lot of the modern solutions like sled db can handle 500 or more posts at once quite well and as fast as it gets. This app aims to be versatile- low amount of users to a high amount of users and still fast overall without being stopped. (given the same hardware as other boards). This Rust app wants to be ultra secure, ultra reliable, and unstoppable. Rust is currently the best choice for that. 
 
 This is the early code to an imageboard that will be superior to existing ones. Feel free to correct me if im 
 wrong, but i think https://usagi.reisen/ is the fastest well known ib that out there today (made in Golang) and this
