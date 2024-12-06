@@ -1,5 +1,5 @@
 
-Here is an example of what paying chatgpt 20 dollars a month can make you. It is an example of why php is just silly and outdated, and why you do not even have to rely on node js or golang to outshine php any more. This is made in rust, and rust is objectively the top dog. It is FINE to make apps in php and similar as long as you deeply understand that they will never be secure or reliable like rust is. 
+Here is an example of what paying chatgpt 20 dollars a month can make you. It is an example of why php is just silly and outdated, and why you do not even have to rely on node js or golang to outshine php any more. This is made in rust, and rust is objectively the top dog. (It is FINE to make apps in php and similar as long as you deeply understand that they will never be secure or reliable like rust is.)
 
 this is https://github.com/x1a7x/SIMPLE-RUST-TEXBOARD (which uses sled db) converted to use postgres. 
 
