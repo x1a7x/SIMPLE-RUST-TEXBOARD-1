@@ -1,8 +1,6 @@
 this is https://github.com/x1a7x/SIMPLE-RUST-TEXBOARD (which uses sled db) converted to use postgres. 
 
-Seems to work very well, not tested fully yet tho. Lightning fast even on tor because so far its only
-
-rust and text. 
+Seems to work very well, not tested fully yet tho. Lightning fast even on tor because so far its only rust and text. 
 
 This is the early code to an imageboard that will be superior to existing ones. Feel free to correct me if im 
 wrong, but i think https://usagi.reisen/ is the fastest well known ib that out there today (made in Golang) and this
