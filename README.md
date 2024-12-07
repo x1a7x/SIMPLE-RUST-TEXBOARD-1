@@ -8,4 +8,4 @@ this is https://github.com/x1a7x/SIMPLE-RUST-TEXBOARD (which uses sled db) conve
 
 
 
-
+notes/feed.txt is all the code. feed that file to chatgpt and you can tell it what to change.... weeeeeeeeeeeeeeeeeeeeeeeeeeeeeee :)
