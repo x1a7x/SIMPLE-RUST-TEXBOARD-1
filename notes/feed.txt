@@ -1,0 +1,714 @@
+db.sh
+
+#!/bin/bash
+
+# Database credentials
+DB_NAME="chess"
+DB_USER="chessadmin"
+DB_PASSWORD="securepassword"
+DB_HOST="localhost"
+
+# SQL commands
+SQL_COMMANDS=$(cat <<EOF
+DROP TABLE IF EXISTS replies CASCADE;
+DROP TABLE IF EXISTS threads CASCADE;
+
+CREATE TABLE threads (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    last_updated BIGINT NOT NULL
+);
+
+CREATE TABLE replies (
+    id SERIAL PRIMARY KEY,
+    parent_id INT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+    message TEXT NOT NULL
+);
+
+-- Insert sample data
+INSERT INTO threads (title, message, last_updated)
+VALUES
+('Welcome to 4Chess', 'This is a demo thread.', extract(epoch from now())),
+('Chess Strategies', 'Share your best chess strategies here!', extract(epoch from now()));
+
+INSERT INTO replies (parent_id, message)
+VALUES
+(1, 'This is a reply to the first thread.'),
+(2, 'The Sicilian Defense is great for aggressive play.');
+EOF
+)
+
+# Execute SQL commands
+export PGPASSWORD="$DB_PASSWORD"
+
+echo "Resetting database and creating tables..."
+psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "$SQL_COMMANDS"
+
+if [ $? -eq 0 ]; then
+    echo "Database setup completed successfully."
+else
+    echo "Error setting up the database."
+    exit 1
+fi
+
+////////////////////////////////////////
+
+
+Cargo.toml
+
+
+[package]
+name = "chess_board"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.9.0"
+actix-files = "0.6.6"
+askama = "0.12.1"
+sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres"] }
+dotenv = "0.15"
+tokio = { version = "1.42.0", features = ["full"] }
+log = "0.4.22"
+env_logger = "0.11.5"
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+
+
+////////////////////////////////////////////////
+
+/templates/base.html
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adelia Imageboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    {% block content %}
+    {% endblock %}
+</body>
+</html>
+
+
+
+
+///////////////////////////////////////
+
+
+templates/homepage.html
+
+
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="logo">Rust Simple Textboard</div>
+<hr>
+
+<!-- Create Thread Form -->
+<div id="post-form-container">
+    <form class="postform" action="/thread" method="post">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" maxlength="75" placeholder="Thread title" required>
+
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="4" maxlength="8000" placeholder="Thread message" required></textarea>
+
+        <input type="submit" value="Create Thread">
+    </form>
+</div>
+<hr>
+
+<!-- Thread List -->
+<div class="postlists">
+    {% for thread in threads %}
+        <div class="thread">
+            <div class="row1">
+                <span class="title">{{ thread.title }}</span>
+                <a href="/thread/{{ thread.id }}" class="reply-link">Reply</a><br>
+                <span class="message">{{ thread.message }}</span>
+            </div>
+            <hr>
+        </div>
+    {% else %}
+        <p>No threads found. Be the first to create one!</p>
+    {% endfor %}
+</div>
+
+<!-- Pagination Controls -->
+<div class="pagination">
+    {% if current_page > 1 %}
+        <a href="/?page={{ current_page - 1 }}">Previous</a>
+    {% endif %}
+
+    {% for page in 1..=total_pages %}
+        {% if page == current_page %}
+            <span class="current">{{ page }}</span>
+        {% else %}
+            <a href="/?page={{ page }}">{{ page }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if current_page < total_pages %}
+        <a href="/?page={{ current_page + 1 }}">Next</a>
+    {% endif %}
+</div>
+
+<div class="footer">
+    - Powered by Rust and Actix Web -
+</div>
+{% endblock %}
+//////////////////////////////////////////////////////////////////////
+
+
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Reply Mode Label -->
+<div class="replymode">
+    <strong>Reply Mode</strong> | <a href="/">Back to Main Board</a>
+</div>
+<br>
+
+<!-- Reply Form -->
+<div class="postarea-container">
+    <form class="postform" action="/reply" method="post">
+        <input type="hidden" name="parent_id" value="{{ thread.id }}">
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" rows="4" maxlength="8000" placeholder="Reply to thread" required></textarea>
+        <input type="submit" value="Reply">
+    </form>
+</div>
+<br>
+
+<!-- Main Thread -->
+<div class="thread">
+    <div class="row1">
+        <span class="title">{{ thread.title }}</span><br>
+        <span class="message">{{ thread.message }}</span>
+    </div>
+</div>
+<hr>
+
+<!-- Replies -->
+<div class="postlists">
+    {% for reply in replies %}
+        <div class="reply" id="post{{ reply.id }}">
+            <span class="message">{{ reply.message }}</span>
+        </div>
+        <hr>
+    {% else %}
+        <p>No replies yet. Be the first to reply!</p>
+    {% endfor %}
+</div>
+
+<div class="footer">
+    - Powered by Rust and Actix Web -
+</div>
+{% endblock %}
+
+//////////////////////////////////////////
+
+
+static/style.css
+
+
+
+/* General Styles */
+html, body {
+    font-size: 12pt;
+    background: #EEF2FF;
+    color: #000000;
+    margin: 0;
+    padding: 8px;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow-wrap: break-word; /* Prevent long words from overflowing */
+    word-wrap: break-word;
+}
+
+a {
+    background: inherit;
+    color: #34345C;
+    text-decoration: none;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+a:visited {
+    background: inherit;
+    color: #34345C;
+    text-decoration: none;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+a:hover {
+    color: #DD0000;
+    background: inherit;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+hr {
+    color: #34345C;
+    background-image: linear-gradient(to right, rgba(238,242,255,1), rgba(52,52,92,0.75), rgba(238,242,255,1));
+    border: none;
+    height: 1px;
+}
+
+.adminbar {
+    text-align: right;
+    margin-bottom: 10px;
+}
+
+.logo {
+    clear: both;
+    text-align: center;
+    font-size: 24pt;
+    color: #AF0A0F;
+    width: 100%;
+}
+
+.postarea {
+    background: inherit;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.postform {
+    width: 400px; /* Set the form width to be narrower */
+    margin: 0 auto; /* Center the form */
+    padding: 15px;
+    border: 1px solid #34345C; /* Add a border to distinguish the form */
+    border-radius: 5px;
+    background-color: #f0f8ff; /* Light blue background to set it apart */
+}
+
+.postform label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.postform input[type="text"],
+.postform textarea {
+    width: calc(100% - 10px);
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    overflow-wrap: break-word; /* Prevent long words from overflowing */
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.postform input[type="submit"] {
+    padding: 10px 20px;
+    background: #34345C;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.postform input[type="submit"]:hover {
+    background: #DD0000;
+}
+
+input[type="text"]#subject {
+    max-width: 350px; /* Limit the maximum width */
+}
+
+.row1 {
+    font-size: 14px; /* Increase the font size to match the reply text size */
+    color: #000000;
+    padding: 10px;
+    background: #9AD2F6;
+    overflow-wrap: break-word; /* Prevent long words from overflowing */
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.replymode {
+    background-color: #0010E0;
+    color: #FFFFFF;
+    padding: 10px;
+    font-size: 14px;
+    text-align: left;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.replymode a {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+
+.replymode a:hover {
+    color: #DD0000;
+}
+
+.reply {
+    background: #D6DAF0;
+    color: #000000;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 14px; /* Make sure replies use the same larger text size */
+    overflow-wrap: break-word; /* Prevent long words from overflowing */
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.reply-link {
+    font-size: 14px; /* Ensure reply links are the same size as the text */
+    color: #34345C;
+}
+
+/* New Styling for Subject Headers */
+.subject {
+    font-size: 1.5em; /* Equivalent to h2 size */
+    font-weight: bold;
+    margin: 0.5em 0;
+    color: #34345C; /* Match with other primary colors */
+}
+
+.pagination {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.pagination a, .pagination span {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 0 2px;
+    border: 1px solid #ccc;
+    text-decoration: none;
+    color: #34345C;
+}
+
+.pagination .current {
+    background: #34345C;
+    color: #fff;
+    border-color: #34345C;
+}
+
+.pagination .disabled {
+    color: #999;
+    border-color: #ccc;
+}
+
+/* Expandable Image Styling */
+.expandable-image {
+    cursor: pointer;
+    transition: transform 0.3s ease, max-height 0.3s ease;
+    max-width: 100%;
+    height: auto;
+}
+
+.expandable-image.expanded {
+    width: auto !important;
+    height: auto !important;
+    max-height: 90vh;
+    max-width: 90vw;
+    transform: scale(1.05);
+}
+
+.thread-image, .reply-image {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 10px;
+}
+
+.thread-image img, .reply-image img {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    max-width: 250px;
+    height: auto;
+}
+
+/* Optional Enhancement: Back Button Styling */
+.back-button {
+    background-color: #DD0000;
+    color: #FFFFFF;
+    padding: 5px 10px;
+    border-radius: 3px;
+    text-decoration: none;
+}
+
+.back-button:hover {
+    background-color: #AA0000;
+}
+
+///////////////
+
+main.rs
+
+
+
+use actix_files as fs;
+use actix_web::{
+    web, App, HttpResponse, HttpServer, Responder, middleware,
+};
+use askama::Template;
+use chrono::Utc; // Import chrono for timestamps
+use serde::Deserialize; // Import serde for form deserialization
+use sqlx::{PgPool};
+use tokio::fs as async_fs;
+use std::env;
+use log::{error, info};
+
+// Constants
+const UPLOAD_DIR: &str = "./uploads/";
+const THUMB_DIR: &str = "./thumbs/";
+
+// Template Structures
+#[derive(Template)]
+#[template(path = "homepage.html")]
+struct HomepageTemplate<'a> {
+    threads: &'a [Thread],
+    current_page: i32,
+    total_pages: i32,
+}
+
+#[derive(Template)]
+#[template(path = "thread.html")]
+struct ThreadTemplate<'a> {
+    thread: &'a Thread,
+    replies: &'a [Reply],
+}
+
+// Models
+#[derive(Debug)]
+struct Thread {
+    id: i32,
+    title: String,
+    message: String,
+	 #[allow(dead_code)] // Suppress warning, because postgres uses it, not rust.
+    last_updated: i64,
+}
+
+#[derive(Debug)]
+struct Reply {
+    id: i32,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct NewThreadForm {
+    title: String,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct NewReplyForm {
+    parent_id: i32,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PaginationParams {
+    page: Option<i32>,
+}
+
+// Homepage handler
+async fn homepage(
+    pool: web::Data<PgPool>,
+    query: web::Query<PaginationParams>,
+) -> impl Responder {
+    let page_size: i64 = 10;
+    let page_number: i64 = query.page.unwrap_or(1) as i64;
+
+    let threads: Vec<Thread> = sqlx::query_as!(
+        Thread,
+        "SELECT id, title, message, last_updated FROM threads ORDER BY last_updated DESC LIMIT $1 OFFSET $2",
+        page_size,
+        (page_number - 1) * page_size
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    .unwrap_or_default();
+
+    let total_threads: i64 = sqlx::query_scalar!("SELECT COUNT(*) FROM threads")
+        .fetch_one(pool.get_ref())
+        .await
+        .unwrap_or(Some(0))
+        .unwrap_or(0);
+
+    let total_pages = (total_threads as f64 / page_size as f64).ceil() as i32;
+
+    let tmpl = HomepageTemplate {
+        threads: &threads,
+        current_page: page_number as i32,
+        total_pages,
+    };
+
+    match tmpl.render() {
+        Ok(rendered) => HttpResponse::Ok().content_type("text/html").body(rendered),
+        Err(e) => {
+            error!("Template rendering error: {}", e);
+            HttpResponse::InternalServerError().body("Error rendering page")
+        }
+    }
+}
+
+// Thread view handler
+async fn view_thread(
+    pool: web::Data<PgPool>,
+    path: web::Path<(i32,)>,
+) -> impl Responder {
+    let thread_id = path.into_inner().0;
+
+    let thread = sqlx::query_as!(
+        Thread,
+        "SELECT id, title, message, last_updated FROM threads WHERE id = $1",
+        thread_id
+    )
+    .fetch_optional(pool.get_ref())
+    .await
+    .unwrap();
+
+    if let Some(thread) = thread {
+        let replies: Vec<Reply> = sqlx::query_as!(
+            Reply,
+            "SELECT id, message FROM replies WHERE parent_id = $1 ORDER BY id ASC",
+            thread_id
+        )
+        .fetch_all(pool.get_ref())
+        .await
+        .unwrap_or_default();
+
+        let tmpl = ThreadTemplate {
+            thread: &thread,
+            replies: &replies,
+        };
+
+        match tmpl.render() {
+            Ok(rendered) => HttpResponse::Ok().content_type("text/html").body(rendered),
+            Err(e) => {
+                error!("Template rendering error: {}", e);
+                HttpResponse::InternalServerError().body("Error rendering page")
+            }
+        }
+    } else {
+        HttpResponse::NotFound().body("Thread not found")
+    }
+}
+
+// Create thread handler
+async fn create_thread(
+    pool: web::Data<PgPool>,
+    form: web::Form<NewThreadForm>,
+) -> impl Responder {
+    let result = sqlx::query!(
+        "INSERT INTO threads (title, message, last_updated) VALUES ($1, $2, $3)",
+        form.title,
+        form.message,
+        Utc::now().timestamp()
+    )
+    .execute(pool.get_ref())
+    .await;
+
+    match result {
+        Ok(_) => HttpResponse::SeeOther().append_header(("Location", "/")).finish(),
+        Err(e) => {
+            error!("Failed to create thread: {}", e);
+            HttpResponse::InternalServerError().body("Failed to create thread")
+        }
+    }
+}
+
+// Create reply handler
+async fn create_reply(
+    pool: web::Data<PgPool>,
+    form: web::Form<NewReplyForm>,
+) -> impl Responder {
+    let result = sqlx::query!(
+        "INSERT INTO replies (parent_id, message) VALUES ($1, $2)",
+        form.parent_id,
+        form.message
+    )
+    .execute(pool.get_ref())
+    .await;
+
+    if result.is_ok() {
+        let update_result = sqlx::query!(
+            "UPDATE threads SET last_updated = $1 WHERE id = $2",
+            Utc::now().timestamp(),
+            form.parent_id
+        )
+        .execute(pool.get_ref())
+        .await;
+
+        if update_result.is_err() {
+            error!("Failed to update last_updated for thread {}", form.parent_id);
+            return HttpResponse::InternalServerError().body("Failed to update thread timestamp");
+        }
+
+        HttpResponse::SeeOther()
+            .append_header(("Location", format!("/thread/{}", form.parent_id)))
+            .finish()
+    } else {
+        error!("Failed to post reply");
+        HttpResponse::InternalServerError().body("Failed to post reply")
+    }
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // Initialize logger
+    env_logger::init();
+
+    // Load environment variables
+    dotenv::dotenv().ok();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+
+    // Create database connection pool
+    let pool = PgPool::connect(&database_url)
+        .await
+        .expect("Failed to connect to the database");
+
+    // Ensure required directories exist
+    for dir in &[UPLOAD_DIR, THUMB_DIR] {
+        if !std::path::Path::new(dir).exists() {
+            async_fs::create_dir_all(dir).await.unwrap();
+            info!("Created directory: {}", dir);
+        }
+    }
+
+    // Start the Actix web server
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(pool.clone()))
+            .wrap(middleware::Logger::default())
+            .service(fs::Files::new("/static", "./static").show_files_listing())
+            .route("/", web::get().to(homepage))
+            .route("/thread/{id}", web::get().to(view_thread))
+            .route("/thread", web::post().to(create_thread))
+            .route("/reply", web::post().to(create_reply))
+    })
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
